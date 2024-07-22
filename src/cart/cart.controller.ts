@@ -7,7 +7,9 @@ import { AppRequest, getUserIdFromRequest } from '../shared';
 import { calculateCartTotal } from './models-rules';
 import { CartService } from './services';
 
-@Controller('api/profile/cart')
+import { CartItem } from '../entity/CartItem';
+
+@Controller('profile/cart')
 export class CartController {
   constructor(
     private cartService: CartService,
@@ -18,30 +20,46 @@ export class CartController {
   // @UseGuards(BasicAuthGuard)
   @Get()
   async findUserCart(@Req() req: AppRequest) {
-    const cart = await this.cartService.findByUserId(getUserIdFromRequest(req));
+    const cart = await this.cartService.findOpenCartByUserId(getUserIdFromRequest(req));
 
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'OK',
-      data: { cart, total: calculateCartTotal(cart) },
+    if (!cart || !cart.items) {
+      return [];
     }
+
+    return cart.items?.map((item: CartItem) => ({
+      product: {
+        id: item.product.id,
+        title: item.product.title,
+        description: item.product.description,
+        price: item.product.price,
+      },
+      count: item.count,
+    }));
   }
 
   // @UseGuards(JwtAuthGuard)
   // @UseGuards(BasicAuthGuard)
-//   @Put()
-//   updateUserCart(@Req() req: AppRequest, @Body() body) { // TODO: validate body payload...
-//     const cart = this.cartService.updateByUserId(getUserIdFromRequest(req), body)
-//
-//     return {
-//       statusCode: HttpStatus.OK,
-//       message: 'OK',
-//       data: {
-//         cart,
-//         total: calculateCartTotal(cart),
-//       }
-//     }
-//   }
+  @Put()
+  async updateUserCart(@Req() req: AppRequest, @Body() body) {
+    const { product, count } = body;
+    const items = [{
+      product_id: product.id,
+      count: count,
+      product_title: product.title,
+      product_description: product.description,
+      product_price: product.price
+    }];
+    const cart = await this.cartService.updateByUserId(getUserIdFromRequest(req), items);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'OK',
+      data: {
+        cart,
+        total: calculateCartTotal(cart),
+      }
+    };
+  }
+
 
   // @UseGuards(JwtAuthGuard)
   // @UseGuards(BasicAuthGuard)

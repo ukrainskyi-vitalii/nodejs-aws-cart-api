@@ -1,10 +1,10 @@
-import { CartItem } from '../../cart/models';
+import { Cart } from '../../entity/Cart';
 
 export type Order = {
   id?: string,
   userId: string;
-  cartId: string;
-  items: CartItem[]
+  cart: Cart;
+//   items: CartItem[]
   payment: {
     type: string,
     address?: any,
@@ -13,6 +13,8 @@ export type Order = {
   delivery: {
     type: string,
     address: any,
+    firstName?: string,
+    lastName?: string,
   },
   comments: string,
   status: string;
