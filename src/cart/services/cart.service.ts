@@ -25,7 +25,7 @@ export class CartService {
         return await this.cartsRepository.findOne({where: {user_id: userId}, relations: ['items', 'items.product']});
     }
 
-    async createByUserId(userId: string): Promise<Cart> {
+    async createByUserId(userId: string, queryRunner?): Promise<Cart> {
         const id = uuidv4();
         const now = new Date().toISOString();
         const userCart = this.cartsRepository.create({
@@ -37,14 +37,17 @@ export class CartService {
             items: [],
         });
 
+        if (queryRunner) {
+            return await queryRunner.manager.save(Cart, userCart);
+        }
         return await this.cartsRepository.save(userCart);
     }
 
-    async findOrCreateByUserId(userId: string): Promise<Cart> {
-        let cart = await this.findOpenCartByUserId(userId);
+    async findOrCreateByUserId(userId: string, queryRunner?): Promise<Cart> {
+        let cart = await this.findOpenCartByUserId(userId, queryRunner);
 
         if (!cart) {
-            cart = await this.createByUserId(userId);
+            cart = await this.createByUserId(userId, queryRunner);
         }
 
         return cart;
@@ -94,14 +97,18 @@ export class CartService {
         return await this.cartsRepository.save(cart);
     }
 
-
-    async findOpenCartByUserId(userId: string): Promise<Cart> {
+    async findOpenCartByUserId(userId: string, queryRunner?): Promise<Cart> {
+        if (queryRunner) {
+            return await queryRunner.manager.findOne(Cart, {
+                where: { user_id: userId, status: CartStatuses.OPEN },
+                relations: ['items', 'items.product'],
+            });
+        }
         return await this.cartsRepository.findOne({
             where: { user_id: userId, status: CartStatuses.OPEN },
             relations: ['items', 'items.product'],
         });
     }
-
 
     // removeByUserId(userId): void {
     //   this.userCarts[ userId ] = null;

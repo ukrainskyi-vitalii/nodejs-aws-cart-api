@@ -19,9 +19,11 @@ export class UsersService {
     return this.userRepository.findOne({ where: { first_name: firstName, last_name: lastName } });
   }
 
-  async createOne({ first_name, last_name }: Partial<User>): Promise<User> {
-    const id = uuidv4();
+  async createOne({ id, first_name, last_name }: Partial<User>, queryRunner?): Promise<User> {
     const newUser = this.userRepository.create({ id, first_name, last_name });
+    if (queryRunner) {
+      return await queryRunner.manager.save(User, newUser);
+    }
     return await this.userRepository.save(newUser);
   }
 }

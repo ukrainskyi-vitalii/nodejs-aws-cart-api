@@ -1,10 +1,10 @@
-import {Injectable} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
-import {Order} from '../../entity/Order';
-import {Cart} from '../../entity/Cart';
-import {CartItem} from '../../entity/CartItem';
-import {CartStatuses} from "../../cart";
+import { Injectable } from '@nestjs/common';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
+import { Order } from '../../entity/Order';
+import { Cart } from '../../entity/Cart';
+import { CartItem } from '../../entity/CartItem';
+import { CartStatuses } from "../../cart";
 
 @Injectable()
 export class OrderService {
@@ -17,6 +17,8 @@ export class OrderService {
         private readonly cartRepository: Repository<Cart>,
         @InjectRepository(CartItem)
         private readonly cartItemRepository: Repository<CartItem>,
+        @InjectDataSource() private readonly dataSource: DataSource,
+
     ) {
     }
 
@@ -27,18 +29,27 @@ export class OrderService {
         });
     }
 
-    async create(orderData: Partial<Order>): Promise<Order> {
+    async create(orderData: Partial<Order>, queryRunner?): Promise<Order> {
         const order = this.orderRepository.create(orderData);
-        const savedOrder = await this.orderRepository.save(order);
+        let savedOrder;
+        if (queryRunner) {
+            savedOrder = await queryRunner.manager.save(order);
+        } else {
+            savedOrder = await this.orderRepository.save(order);
+        }
+
         const cart = savedOrder.cart;
         cart.status = CartStatuses.ORDERED;
-        await this.updateCartStatus(cart);
+        await this.updateCartStatus(cart, queryRunner);
 
         return savedOrder;
     }
 
-    async updateCartStatus(cart: Cart): Promise<Cart> {
+    async updateCartStatus(cart: Cart, queryRunner?): Promise<Cart> {
         cart.updated_at = new Date().toISOString();
+        if (queryRunner) {
+            return await queryRunner.manager.save(cart);
+        }
         return await this.cartRepository.save(cart);
     }
 

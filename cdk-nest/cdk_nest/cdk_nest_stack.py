@@ -1,5 +1,5 @@
 import os
-import dotenv
+from dotenv import load_dotenv
 
 from aws_cdk import (
     Stack,
@@ -16,7 +16,7 @@ class CdkNestStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        dotenv.load_dotenv()
+        load_dotenv()
 
         vpc = ec2.Vpc.from_lookup(self, "Vpc", vpc_id=os.getenv("RDS_VPC_GROUP_ID"))
 

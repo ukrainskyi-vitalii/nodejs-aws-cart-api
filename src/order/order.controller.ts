@@ -3,7 +3,9 @@ import { OrderService } from './services';
 import { CartService, CartStatuses } from '../cart';
 import { UsersService } from '../users';
 import { Order } from '../entity/Order';
-import { AppRequest } from "../shared";
+import {AppRequest, getUserIdFromRequest} from "../shared";
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 @Controller('order')
 export class OrderController {
@@ -11,6 +13,7 @@ export class OrderController {
         private readonly orderService: OrderService,
         private readonly cartService: CartService,
         private readonly userService: UsersService,
+        @InjectDataSource() private readonly dataSource: DataSource,
     ) {
     }
 
@@ -19,27 +22,42 @@ export class OrderController {
         const items = orderData.items || [];
         const delivery = orderData.address ?? {};
 
-        let user = await this.userService.findByFullName(delivery.firstName, delivery.lastName);
-        if (!user) {
-            user = await this.userService.createOne({
-                first_name: delivery.firstName,
-                last_name: delivery.lastName
-            });
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            let user = await this.userService.findByFullName(delivery.firstName, delivery.lastName);
+            if (!user) {
+                user = await this.userService.createOne({
+                    id: getUserIdFromRequest(req),
+                    first_name: delivery.firstName,
+                    last_name: delivery.lastName
+                }, queryRunner);
+            }
+
+            let userCart = await this.cartService.findOrCreateByUserId(user.id, queryRunner);
+
+            const formattedOrderData: Partial<Order> = {
+                userId: user.id,
+                cart: userCart,
+                payment: orderData.payment || { type: '', address: {}, creditCard: {} },
+                delivery: delivery || { type: '', address: {} },
+                comments: delivery.comment || '',
+                status: CartStatuses.OPEN,
+                total: items.length,
+            };
+
+            const order = await this.orderService.create(formattedOrderData, queryRunner);
+
+            await queryRunner.commitTransaction();
+            return order;
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw new Error('Failed to create order: ' + error.message);
+        } finally {
+            await queryRunner.release();
         }
-
-        let userCart = await this.cartService.findOrCreateByUserId(user.id);
-
-        const formattedOrderData: Partial<Order> = {
-            userId: user.id,
-            cart: userCart,
-            payment: orderData.payment || {type: '', address: {}, creditCard: {}},
-            delivery: delivery || {type: '', address: {}},
-            comments: delivery.comment || '',
-            status: CartStatuses.OPEN,
-            total: items.length,
-        };
-
-        return await this.orderService.create(formattedOrderData);
     }
 
     @Get(':id')
