@@ -4,7 +4,7 @@ import { AppController } from './app.controller';
 import { CartModule } from './cart/cart.module';
 import { AuthModule } from './auth/auth.module';
 import { OrderModule } from './order/order.module';
-import { Cart } from './entity/Cart';
+import { Cart  } from './entity/Cart';
 import { CartItem } from './entity/CartItem';
 
 import * as dotenv from 'dotenv';
