@@ -1,19 +1,28 @@
 # Ignore node_modules to reduce image size and because dependencies will be installed in the Docker image
 node_modules
+
 # Ignore local environment files
 .env
+
 # Ignore npm debug log
 npm-debug.log
+
 # Ignore build files from previous runs
 dist
+
 # Ignore docker-compose files if present
 docker-compose*.yml
+
 # Ignore .git directory
 .git
+
 # Ignore any operating system files
 .DS_Store
 Thumbs.db
+
 # Ignore test files and configurations
 test
-# Ignore Elastic Beanstalk specific configurations
 .elasticbeanstalk
+
+!.ebextensions/
+
