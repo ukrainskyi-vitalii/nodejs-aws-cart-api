@@ -11,15 +11,15 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  validateUser(name: string, password: string): any {
-    const user = this.usersService.findOne(name);
-
-    if (user) {
-      return user;
-    }
-
-    return this.usersService.createOne({ name, password })
-  }
+  // validateUser(name: string, password: string): any {
+  //   const user = this.usersService.findOne(name);
+  //
+  //   if (user) {
+  //     return user;
+  //   }
+  //
+  //   return this.usersService.createOne({ name, password })
+  // }
 
   login(user: User, type) {
     const LOGIN_MAP = {
