@@ -15,4 +15,5 @@ docker-compose*.yml
 Thumbs.db
 # Ignore test files and configurations
 test
+# Ignore Elastic Beanstalk specific configurations
 .elasticbeanstalk
